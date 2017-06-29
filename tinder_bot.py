@@ -97,6 +97,84 @@ if __name__ == '__main__':
     data_base = JsonData()
 
     while True:
+        try:
+            generator = session.nearby_users()
+        except KeyError:
+            continue
+
+        for user in generator:
+            pk = initial_id
+            print("%s - %i " % (user.name, data_base.match_couter))
+
+            x = 0
+            for photo in user.get_photos(width="640"):
+                file_name = "%i_%s_%i.jpg" % (data_base.next_id, user.name, x)
+                file_path = "%s%s" % (images_path, file_name)
+
+                f = open(file_path,'wb')
+                f.write(requests.get(photo).content)
+                f.close()
+
+                x += 1
+
+            user.like()
+            data_base.add_user(user)
+            data_base.add_to_match_counter()
+            waitABit(0.25 * 5, 0.5 * 5)
+
+        print("End of generator.")
+        waitABit(0.25 * 15, 0.5 * 15)
+)
+        return self.match_couter
+
+    def get(self, key):
+        return self.get_json()[key]
+
+    def set(self, key, data):
+        json_data = self.get_json()
+        json_data[key] = data
+        self.save(json_data)
+
+    def add_user(self, user):
+        user_ser = self.match_ser(user)
+
+        data = self.get_json()
+
+        data["matches"].append(user_ser)
+
+        self.save(data)
+        self.current_id += 1
+        self.next_id = self.current_id + 1
+
+        self.set("last_id", self.current_id)
+
+        return self.current_id
+
+    def save(self, data):
+        data_base = open(self.DATA_BASE, "+w")
+        data_base.write(json.dumps(data, indent=4))
+        data_base.close()
+
+        return data
+
+    def get_json(self):
+        data_base = open(self.DATA_BASE, "r")
+        _json = json.loads(data_base.read())
+        data_base.close()
+
+        return _json
+
+def waitABit(minTime, maxTime):
+    wait = random.uniform(minTime, maxTime)
+    print("WAIT: %i - %i: %s \n" % (minTime, maxTime, str(wait)))
+    time.sleep(wait)
+
+
+if __name__ == '__main__':
+    session = pynder.Session(facebook_id=facebook_id, facebook_token=facebook_auth_token)
+    data_base = JsonData()
+
+    while True:
         for user in session.nearby_users():
             pk = initial_id
             print("%s - %i " % (user.name, data_base.match_couter))
